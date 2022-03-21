@@ -1,5 +1,7 @@
 #include "dependencies/smhasher/src/MurmurHash3.h"
 #include "dependencies/smhasher/src/SpeedTest.h"
+#include "dependencies/xxHash/xxhash.h"
+#include "dependencies/xxHash/xxh3.h"
 
 #include <filesystem>
 #include <fstream>
@@ -24,7 +26,6 @@ class Benchmark {
             TinySpeedTest(handle, NOT_USED, keySize, seed, VERBOSE, d);
             file << keySize << " " << d << '\n';
         }
-        file << &fflush;
         file.close();
     }
 
@@ -36,7 +37,6 @@ class Benchmark {
             TinySpeedTest(handle, NOT_USED, keySize, seed, VERBOSE, d);
             file << keySize << " " << d << '\n';
         }
-        file << &fflush;
         file.close();
     };
 
@@ -75,6 +75,12 @@ void memcpyWrapper(const void *blob, const int len, [[maybe_unused]] const uint3
     ((uint64_t *) out)[1] = 0;
 }
 
+void xxHashWrapper(const void *blob, const int len, const uint32_t seed, void *out) {
+    XXH128_hash_t hash = XXH128(blob, len, seed);
+    ((uint64_t *) out)[0] = hash.low64;
+    ((uint64_t *) out)[1] = hash.high64;
+}
+
 int main(int argc, char *argv[]) {
     if (argc != 2) {
         return 1;
@@ -83,6 +89,7 @@ int main(int argc, char *argv[]) {
 
     Benchmark(MurmurHash3_x64_128, std::filesystem::path(argv[1]) / "linux_murmur_x64_128")();
     Benchmark(memcpyWrapper, std::filesystem::path(argv[1]) / "linux_memcpy")();
+    Benchmark(xxHashWrapper, std::filesystem::path(argv[1]) / "linux_xxhash_128")();
 
     free(mem);
 }
