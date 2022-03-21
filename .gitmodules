@@ -1,0 +1,6 @@
+[submodule "hw-01/dependencies/xxHash"]
+	path = hw-01/dependencies/xxHash
+	url = git@github.com:Cyan4973/xxHash.git
+[submodule "hw-01/dependencies/smhasher"]
+	path = hw-01/dependencies/smhasher
+	url = git@github.com:aappleby/smhasher.git
