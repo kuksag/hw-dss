@@ -1,3 +1,5 @@
+#pragma GCC target ("avx2")
+
 #include "dependencies/smhasher/src/MurmurHash3.h"
 #include "dependencies/smhasher/src/SpeedTest.h"
 #include "dependencies/xxHash/xxhash.h"
