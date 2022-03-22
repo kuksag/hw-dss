@@ -4,3 +4,6 @@
 [submodule "hw-01/dependencies/smhasher"]
 	path = hw-01/dependencies/smhasher
 	url = git@github.com:aappleby/smhasher.git
+[submodule "hw-01/dependencies/matplotlibcpp"]
+	path = hw-01/dependencies/matplotlibcpp
+	url = git@github.com:lava/matplotlib-cpp

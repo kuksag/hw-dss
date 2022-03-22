@@ -5,8 +5,10 @@
 #include "dependencies/xxHash/xxhash.h"
 #include "dependencies/xxHash/xxh3.h"
 
-#include <filesystem>
+#include <experimental/filesystem>
 #include <fstream>
+
+namespace fs = std::experimental::filesystem;
 
 class Benchmark {
     enum {
@@ -17,7 +19,7 @@ class Benchmark {
     const static char *TEST_BIG;
 
     pfHash handle;
-    std::filesystem::path path;
+    fs::path path;
     int seed;
 
     void smallTest() {
@@ -55,7 +57,7 @@ public:
         HIGH = 1000,
     };
 
-    Benchmark(pfHash handle_, std::filesystem::path path_, int seed_ = 1) : handle(handle_), path(std::move(path_)),
+    Benchmark(pfHash handle_, fs::path path_, int seed_ = 1) : handle(handle_), path(std::move(path_)),
                                                                             seed(seed_) {
     }
 
@@ -89,9 +91,9 @@ int main(int argc, char *argv[]) {
     }
     mem = malloc(Benchmark::HIGH);
 
-    Benchmark(MurmurHash3_x64_128, std::filesystem::path(argv[1]) / "linux_murmur_x64_128")();
-    Benchmark(memcpyWrapper, std::filesystem::path(argv[1]) / "linux_memcpy")();
-    Benchmark(xxHashWrapper, std::filesystem::path(argv[1]) / "linux_xxhash_128")();
+    Benchmark(MurmurHash3_x64_128, fs::path(argv[1]) / "linux_murmur_x64_128")();
+    Benchmark(memcpyWrapper, fs::path(argv[1]) / "linux_memcpy")();
+    Benchmark(xxHashWrapper, fs::path(argv[1]) / "linux_xxhash_128")();
 
     free(mem);
 }
