@@ -7,10 +7,16 @@
 #include <vector>
 namespace plt = matplotlibcpp;
 namespace fs = std::experimental::filesystem;
-int main() {
+void draw_one(const std::string &suffix) {
   std::string path = "./data/";
+  plt::figure_size(1200, 780);
   for (const auto entity : fs::directory_iterator(path)) {
     std::ifstream fin;
+    std::string filename = entity.path().filename().string();
+    if (filename.substr(filename.size() - suffix.size(), suffix.size()) !=
+        suffix) {
+      continue;
+    }
     fin.open(entity.path());
     std::vector<double> x, y;
     while (!fin.eof()) {
@@ -20,16 +26,17 @@ int main() {
       x.push_back(fst);
       y.push_back(snd);
     }
-    plt::figure_size(1200, 780);
-
-    plt::plot(x, y);
-
-    plt::title(entity.path().filename());
-
-    plt::xlabel("object size");
-    plt::ylabel("processor cycles");
-    std::string filename =
-        std::string("plots/") + entity.path().filename().string();
-    plt::save(filename);
+    plt::named_plot(filename, x, y);
   }
+  plt::title(suffix + " test");
+  plt::legend();
+  fs::path filename = "plots/results_" + suffix;
+  plt::xlabel("object size");
+  plt::ylabel("processor cycles");
+  plt::save(filename);
+}
+
+int main() {
+  draw_one("big");
+  draw_one("small");
 }
