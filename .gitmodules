@@ -7,3 +7,9 @@
 [submodule "hw-01/dependencies/matplotlibcpp"]
 	path = hw-01/dependencies/matplotlibcpp
 	url = git@github.com:lava/matplotlib-cpp
+[submodule "hw-02/dependencies/zstd"]
+	path = hw-02/dependencies/zstd
+	url = git@github.com:facebook/zstd
+[submodule "hw-02/dependencies/lz4"]
+	path = hw-02/dependencies/lz4
+	url = git@github.com:lz4/lz4
