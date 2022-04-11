@@ -1,14 +1,33 @@
+#include <fstream>
 #include <cassert>
 #include <cstdio>
+#include <sys/mman.h>
 #include <cstdlib>
 #include <cstring>
 #include <zstd.h>
 #include <lz4.h>
 #include "dependencies/zstd/examples/common.h"
+#include "dependencies/lz4//lib/lz4file.h"
 #include <experimental/filesystem>
-#include <fstream>
+#include <lz4frame.h>
+#include <fcntl.h>
+
 
 namespace fs = std::experimental::filesystem;
+
+static size_t get_file_size(const char *filename) {
+    struct stat statbuf{};
+
+    if (filename == nullptr) {
+        return 0;
+    }
+
+    if (stat(filename, &statbuf)) {
+        return 0;
+    }
+
+    return statbuf.st_size;
+}
 
 struct ZSTD_COMPRESSOR {
 public:
@@ -86,28 +105,56 @@ void CHECK_CORRECTNESS_ZSTD() {
     assert(((char *) compressor.decompressed)[0] == 'a');
 }
 
-void ZSTD_TEST(const char *dataset) {
+void ZSTD_TEST(const char *dataset, int level) {
     fs::path dataset_dir_path = dataset;
     for (const auto &entity: fs::directory_iterator(dataset_dir_path)) {
         std::string filename = entity.path().string();
         ZSTD_COMPRESSOR compressor(filename.data());
-        compressor.compress_loaded_file(7);
-        printf("%s\t %.3f %ld\n", entity.path().filename().string().data(), compressor.compression_rate, compressor.compress_time_in_millis);
+        compressor.compress_loaded_file(level);
+        printf("%s\t %.3f %ld\n", entity.path().filename().string().data(), compressor.compression_rate,
+               compressor.compress_time_in_millis);
+    }
+}
+
+void LZ4_TEST(const char *dataset, int level) {
+    fs::path dataset_dir_path = dataset;
+    for (const auto &entity: fs::directory_iterator(dataset_dir_path)) {
+        std::string filename = entity.path().string();
+
+        int fd_in = open(filename.c_str(), O_RDONLY);
+        int size_in = get_file_size(filename.c_str());
+        void *in_data = mmap(NULL, size_in, PROT_READ, MAP_PRIVATE, fd_in, 0);
+
+        void *out_data = malloc(size_in);
+
+        long start = clock();
+        int ret;
+
+        ret = LZ4_compress_fast((char *) in_data, (char *) out_data, size_in, size_in, level);
+
+        long finish = clock();
+
+        printf("%s\t %.3f %ld\n", entity.path().filename().string().data(), (double) size_in / ret,
+               finish - start);
+
+        munmap(in_data, size_in);
+        free(out_data);
     }
 }
 
 
 int main(int argc, const char **argv) {
-    if (argc != 3) {
+    if (argc != 4) {
+        fprintf(stderr, "Usage: %s [dataset] [algorithm] [level]\n", argv[0]);
         return 1;
     }
     const char ZSTD[] = "zstd";
     const char LZ4[] = "lz4";
     CHECK_CORRECTNESS_ZSTD();
     if (strcmp(argv[2], ZSTD) == 0) {
-        ZSTD_TEST(argv[1]);
+        ZSTD_TEST(argv[1], atoi(argv[3]));
     } else if (strcmp(argv[2], LZ4) == 0) {
-        //
+        LZ4_TEST(argv[1], atoi(argv[3]));
     } else {
         fprintf(stderr, "bad opt\n");
         return 1;
