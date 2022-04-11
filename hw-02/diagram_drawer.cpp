@@ -12,55 +12,73 @@ namespace fs = std::experimental::filesystem;
 static const std::string COMPRESSION_SUFFIX = "compression";
 static const std::string TIME_SUFFIX = "time";
 
-void draw(const std::string& algorithm, const std::string& metric) {
+void draw(const std::string &metric, const std::string& deprecated_suffix = "") {
     std::string path = "../artifacts/";
-    plt::figure_size(1800, 780);
-    std::vector<std::string> names;
-    std::vector<double> compression, time;
+    plt::figure_size(3500, 780);
+    double shift = -0.5;
+    int index = 0;
+    std::vector <std::string> all_names;
+    std::vector<std::vector<double>> ranges;
+    std::vector<std::vector<double>> compressions;
+    std::vector<std::vector<double>> times;
+
     for (const auto &entity : fs::directory_iterator(path)) {
+
+        std::vector <std::string> names;
+        std::vector<double> compression, time;
         std::ifstream fin;
         std::string filename = entity.path().filename().string();
-        if (filename != algorithm || filename.substr(filename.size() - 3, 3) ==
-            "png") {
+        if (filename.substr(filename.size() - 3, 3) ==
+            "png" || filename == deprecated_suffix) {
             continue;
         }
-
         fin.open(entity.path());
         while (!fin.eof()) {
             double fst = 0;
             double snd = 0;
             std::string name;
             fin >> name >> fst >> snd;
-            if(fst == 0 || snd == 0)continue;
-            names.push_back(name + "_" + filename);
+            names.push_back(name);
             time.push_back(snd);
             compression.push_back(fst);
-
         }
+        std::vector<double> range(names.size());
+        for (int i = 0; i < range.size(); i++) {
+            range[i] = i + shift;
+        }
+        ranges.push_back(range);
+        compressions.push_back(compression);
+        times.push_back(time);
+        if (metric == COMPRESSION_SUFFIX) {
+            plt::bar(ranges[index], compressions[index]);
+        } else {
+            plt::bar(ranges[index], times[index]);
+        }
+        shift += 0.25;
+        all_names = names;
         fin.close();
-    }
-    if(metric == COMPRESSION_SUFFIX){
-        plt::bar(compression);
-        plt::ylabel("compression rate");
-        plt::title("compression test");
-    }else{
-        plt::ylabel("time in milliseconds");
-        plt::title("time test");
-        plt::bar(time);
-    }
-    std::vector<double> range(names.size());
+        index++;
+        }
+    std::vector<double> range(all_names.size());
     for (int i = 0; i < range.size(); i++) {
         range[i] = i;
     }
-    plt::xticks(range, names);
-    fs::path filename = "../artifacts/results_"+algorithm+metric;
+    if (metric == COMPRESSION_SUFFIX) {
+        plt::ylabel("compression rate");
+        plt::title("compression test");
+    } else {
+        plt::ylabel("time in milliseconds");
+        plt::title("time test");
+     }
+    plt::xticks(range, all_names);
+    fs::path filename = "../artifacts/results_" + metric + deprecated_suffix;
     plt::save(filename);
 }
 
 int main() {
-    draw("zstd1", COMPRESSION_SUFFIX);
-    draw("zstd1", TIME_SUFFIX);
-    draw("zstd7", COMPRESSION_SUFFIX);
-    draw("zstd7", TIME_SUFFIX);
+    draw(COMPRESSION_SUFFIX);
+    draw(TIME_SUFFIX);
+    draw(TIME_SUFFIX, "zstd7");
+
 }
 
