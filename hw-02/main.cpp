@@ -125,13 +125,13 @@ void LZ4_TEST(const char *dataset, int level) {
         int size_in = get_file_size(filename.c_str());
         void *in_data = mmap(NULL, size_in, PROT_READ, MAP_PRIVATE, fd_in, 0);
 
-        void *out_data = malloc(size_in);
+        int size_out = 2 * size_in;
+        void *out_data = malloc(size_out);
 
         long start = clock();
         int ret;
 
-        ret = LZ4_compress_fast((char *) in_data, (char *) out_data, size_in, size_in, level);
-
+        ret = LZ4_compress_fast((char *) in_data, (char *) out_data, size_in, size_out, level);
         long finish = clock();
 
         printf("%s\t %.3f %ld\n", entity.path().filename().string().data(), (double) size_in / ret,
