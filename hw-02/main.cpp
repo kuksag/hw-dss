@@ -7,84 +7,58 @@
 #include <experimental/filesystem>
 #include <fstream>
 
-//usage of ZSTD -- http://facebook.github.io/zstd/zstd_manual.html
-//ZSTD_compress(void* dst, size_t dstCapacity, const void *src, size_t srcSize, int compressLevel) to compress
+namespace fs = std::experimental::filesystem;
 
+struct ZSTD_COMPRESSOR {
+public:
+    double compression_rate;
+    long compress_time_in_millis;
 
-//example from zstd examples
-static void compress_orDie(const char* fname, const char* oname)
-{
-    size_t fSize;
-    void* const fBuff = mallocAndLoadFile_orDie(fname, &fSize);
-    size_t const cBuffSize = ZSTD_compressBound(fSize);
-    void* const cBuff = malloc_orDie(cBuffSize);
+    void loadFile(const char *fname) {
+        buffer = mallocAndLoadFile_orDie(fname, &buffer_size);
+        compressed_size = ZSTD_compressBound(buffer_size);
+        compressed = malloc_orDie(compressed_size);
+    }
 
-    /* Compress.
-     * If you are doing many compressions, you may want to reuse the context.
-     * See the multiple_simple_compression.c example.
-     */
-    size_t const cSize = ZSTD_compress(cBuff, cBuffSize, fBuff, fSize, 7);
-    CHECK_ZSTD(cSize);
+    void compress_loaded_file(int level) {
+        clock_t start, stop;
+        start = clock();
+        size_t cSize = ZSTD_compress(compressed, compressed_size, buffer, buffer_size, level);
+        stop = clock();
+        CHECK_ZSTD(cSize);
+        compression_rate = (double) buffer_size / cSize;
+        compress_time_in_millis = stop - start;
+        free_memory();
+    }
 
-    saveFile_orDie(oname, cBuff, cSize);
+private:
+    void *buffer;
+    size_t compressed_size;
+    size_t buffer_size;
+    void *compressed;
 
-    /* success */
-    printf("%25s : %6u -> %7u - %s \n", fname, (unsigned)fSize, (unsigned)cSize, oname);
+    void free_memory() const {
+        free(buffer);
+        free(compressed);
+    }
 
-    free(fBuff);
-    free(cBuff);
+};
+
+void ZSTD_TEST() {
+    fs::path dataset_dir_path = "../dataset";
+    //fs::path result_dir_path = "../res";
+    ZSTD_COMPRESSOR compressor{};
+    printf("file \t compression rate \t time(milliseconds)\n");
+    for (const auto &entity : fs::directory_iterator(dataset_dir_path)) {
+        std::string filename = entity.path().string();
+        compressor.loadFile(filename.c_str());
+        compressor.compress_loaded_file(7);
+        printf("%s\t %.3f %ld\n", filename.c_str(), compressor.compression_rate, compressor.compress_time_in_millis);
+    }
 }
 
-static char* createOutFilename_orDie(const char* filename)
-{
-    size_t const inL = strlen(filename);
-    size_t const outL = inL + 5;
-    void* const outSpace = malloc_orDie(outL);
-    memset(outSpace, 0, outL);
-    strcat((char*)outSpace, filename);
-    strcat((char*)outSpace, ".zst");
-    return (char*)outSpace;
-}
-static void decompress(const char* fname)
-{
-    size_t cSize;
-    void* const cBuff = mallocAndLoadFile_orDie(fname, &cSize);
-    /* Read the content size from the frame header. For simplicity we require
-     * that it is always present. By default, zstd will write the content size
-     * in the header when it is known. If you can't guarantee that the frame
-     * content size is always written into the header, either use streaming
-     * decompression, or ZSTD_decompressBound().
-     */
-    unsigned long long const rSize = ZSTD_getFrameContentSize(cBuff, cSize);
-    CHECK(rSize != ZSTD_CONTENTSIZE_ERROR, "%s: not compressed by zstd!", fname);
-    CHECK(rSize != ZSTD_CONTENTSIZE_UNKNOWN, "%s: original size unknown!", fname);
 
-    void* const rBuff = malloc_orDie((size_t)rSize);
-
-    /* Decompress.
-     * If you are doing many decompressions, you may want to reuse the context
-     * and use ZSTD_decompressDCtx(). If you want to set advanced parameters,
-     * use ZSTD_DCtx_setParameter().
-     */
-    size_t const dSize = ZSTD_decompress(rBuff, rSize, cBuff, cSize);
-    CHECK_ZSTD(dSize);
-    /* When zstd knows the content size, it will error if it doesn't match. */
-    CHECK(dSize == rSize, "Impossible because zstd will check this condition!");
-
-    /* success */
-    printf("%25s : %6u -> %7u \n", fname, (unsigned)cSize, (unsigned)rSize);
-
-    free(rBuff);
-    free(cBuff);
-}
-
-int main(int argc, const char** argv)
-{
-    const char* const inFilename = "../dataset/mozilla";
-
-    char* const outFilename = createOutFilename_orDie(inFilename);
-    compress_orDie(inFilename, outFilename);
-    decompress(outFilename);
-    free(outFilename);
+int main(int argc, const char **argv) {
+    ZSTD_TEST();
     return 0;
 }
