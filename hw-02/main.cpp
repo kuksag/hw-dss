@@ -86,26 +86,28 @@ void CHECK_CORRECTNESS_ZSTD() {
     assert(((char *) compressor.decompressed)[0] == 'a');
 }
 
-void ZSTD_TEST(const char *dataset) {
+void ZSTD_TEST(const char *dataset, int level) {
     fs::path dataset_dir_path = dataset;
     for (const auto &entity: fs::directory_iterator(dataset_dir_path)) {
         std::string filename = entity.path().string();
         ZSTD_COMPRESSOR compressor(filename.data());
-        compressor.compress_loaded_file(7);
-        printf("%s\t %.3f %ld\n", entity.path().filename().string().data(), compressor.compression_rate, compressor.compress_time_in_millis);
+        compressor.compress_loaded_file(level);
+        printf("%s\t %.3f %ld\n", entity.path().filename().string().data(), compressor.compression_rate,
+               compressor.compress_time_in_millis);
     }
 }
 
 
 int main(int argc, const char **argv) {
-    if (argc != 3) {
+    if (argc != 4) {
+        fprintf(stderr, "Usage: %s [dataset] [algorithm] [level]\n", argv[0]);
         return 1;
     }
     const char ZSTD[] = "zstd";
     const char LZ4[] = "lz4";
     CHECK_CORRECTNESS_ZSTD();
     if (strcmp(argv[2], ZSTD) == 0) {
-        ZSTD_TEST(argv[1]);
+        ZSTD_TEST(argv[1], atoi(argv[3]));
     } else if (strcmp(argv[2], LZ4) == 0) {
         //
     } else {
