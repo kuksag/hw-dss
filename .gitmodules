@@ -13,3 +13,6 @@
 [submodule "hw-02/dependencies/lz4"]
 	path = hw-02/dependencies/lz4
 	url = git@github.com:lz4/lz4
+[submodule "hw-02/dependencies/matplotlib-cpp"]
+	path = hw-02/dependencies/matplotlib-cpp
+	url = git@github.com:lava/matplotlib-cpp
