@@ -72,6 +72,13 @@ void draw(const std::string &metric, const std::string& deprecated_suffix = "") 
      }
     plt::xticks(range, all_names);
     fs::path filename = "../artifacts/results_" + metric + deprecated_suffix;
+    std::vector<int> fx;
+    std::vector<int> fy;
+    plt::named_plot("lz47", fx, fy);
+    plt::named_plot("lz41", fx, fy);
+    plt::named_plot("zstd1", fx, fy);
+    if(deprecated_suffix == "")plt::named_plot("zstd7", fx, fy);
+    plt::legend();
     plt::save(filename);
 }
 
