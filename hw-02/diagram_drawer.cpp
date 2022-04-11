@@ -12,7 +12,7 @@ namespace fs = std::experimental::filesystem;
 static const std::string COMPRESSION_SUFFIX = "compression";
 static const std::string TIME_SUFFIX = "time";
 
-void draw(const std::string& metric) {
+void draw(const std::string& algorithm, const std::string& metric) {
     std::string path = "../artifacts/";
     plt::figure_size(1800, 780);
     std::vector<std::string> names;
@@ -20,10 +20,11 @@ void draw(const std::string& metric) {
     for (const auto &entity : fs::directory_iterator(path)) {
         std::ifstream fin;
         std::string filename = entity.path().filename().string();
-        if (filename.substr(filename.size() - 3, 3) ==
+        if (filename != algorithm || filename.substr(filename.size() - 3, 3) ==
             "png") {
             continue;
         }
+
         fin.open(entity.path());
         while (!fin.eof()) {
             double fst = 0;
@@ -36,6 +37,7 @@ void draw(const std::string& metric) {
             compression.push_back(fst);
 
         }
+        fin.close();
     }
     if(metric == COMPRESSION_SUFFIX){
         plt::bar(compression);
@@ -51,12 +53,14 @@ void draw(const std::string& metric) {
         range[i] = i;
     }
     plt::xticks(range, names);
-    fs::path filename = "../artifacts/results_"+metric;
+    fs::path filename = "../artifacts/results_"+algorithm+metric;
     plt::save(filename);
 }
 
 int main() {
-    draw(COMPRESSION_SUFFIX);
-    draw(TIME_SUFFIX);
+    draw("zstd1", COMPRESSION_SUFFIX);
+    draw("zstd1", TIME_SUFFIX);
+    draw("zstd7", COMPRESSION_SUFFIX);
+    draw("zstd7", TIME_SUFFIX);
 }
 
